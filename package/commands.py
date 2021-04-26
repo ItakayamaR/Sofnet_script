@@ -7,6 +7,8 @@ pream=bytes([36,83,79,70])
 ## Puerto usb a conectar 
 puerto = "/dev/ttyUSB0"
 
+serial_port = 0
+
 #######################################
 ## Funcion que calcula el CRC16
 ## input:  buff (n Bytes)
@@ -41,11 +43,8 @@ def Config_UART():
     )
     # Wait a second to let the port initialize
     time.sleep(1)
-    return serial_port
 
-
-
-def ReceiveComand():
+def ReceiveCmd():
    
     if(serial_port.inWaiting()==0):            
         return -3                       # No hay comunicacion serial
@@ -91,29 +90,35 @@ def ReceiveComand():
 
     return -2   # Error timeout
 
-def SendComand(cmd,data=None):
-    #validaciones
+def sendCmd(cmd,data=None,data2=None):
     if(cmd>255):
         print("No existe el comando")
         return 1
     cmd = cmd.to_bytes(1,'big')
-
-    if(data==None):
-        data_size=0
-        data = bytearray(0)
+    if (data==0):
+      data_size = 1
+      data = data.to_bytes(data_size,'big')
     else:
-        
-        data_size = (data.bit_length()+7)//8
-        data= data.to_bytes(data_size,'big')
+        if(data==None):
+            data_size = 0
+            data = bytearray(0)
+        else:
+            data_size = (data.bit_length()+7)//8
+            data = data.to_bytes(data_size,'big')
+    if(data2==None):
+        data2_size = 0
+        data2 = bytearray(0)
+    else:
+        data2_size = (data2.bit_length()+7)//8
+        data2 = data2.to_bytes(data2_size,'big')
+    #print(data_size)
 
-    #crear trama
-    MDP = bytes([36,77,68,80])
-    longitud = bytes([3+data_size])
-    trama = longitud + cmd + data
-    crc = CRC16(trama) 
+    MDP = pream
+    longitud = bytes([3+data_size+data2_size])
+    trama = longitud + cmd + data + data2
+    crc = crc16(trama)
     trama = MDP + trama + crc
-    print("Comando a enviar: ")
-    print(trama)
     serial_port.write(trama)
-    print("Comando enviado: ")
-    return 0
+
+    #print("Comando enviado: ")
+    #print(trama)
