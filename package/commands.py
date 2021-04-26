@@ -60,7 +60,7 @@ def ReceiveComand():
         if(len(trama)<9):
             continue
         if(trama[0:4]!= pream):
-            print("Error: MDP no concuerda")
+            print("Error: "+ str(pream) + " no concuerda")
             return -1
         if(trama[4]!=len(trama)-5):
             print(len(trama))
@@ -81,7 +81,7 @@ def ReceiveComand():
         #agrega respuesta al Jetson nano
         data = bytes([3,10])
         crc = CRC16(data)
-        MDP = bytes([36,77,68,80])
+        MDP = pream
         trama = MDP + data + crc
 
         serial_port.write(trama)
