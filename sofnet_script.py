@@ -34,10 +34,10 @@ def CRC16(buff):
 ## Configura el puerto UART
 ##
 ##########################################
-def Config_UART():
+def ConfigSerial():
     serial_port = serial.Serial(
         port=puerto,
-        baudrate=9600,
+        baudrate=115200,
         bytesize=serial.EIGHTBITS,
         parity=serial.PARITY_NONE,
         stopbits=serial.STOPBITS_ONE,
@@ -47,35 +47,38 @@ def Config_UART():
     return serial_port
 
 def ReceiveCmd():
-   
+    #serial_port.flush()
     if(serial_port.inWaiting()==0):            
-        return -3                       # No hay comunicacion serial
-
+        return [-3]                       # No hay comunicacion serial
+    time.sleep(0.2)
     start = time.time()
     trama = bytes()
-
     while(time.time() - start < 0.2):
+        
         if(serial_port.inWaiting()==0):
             continue            
         trama +=serial_port.read()
+        
         if(len(trama)<9):
             continue
         if(trama[0:4]!= pream):
             print("Error: "+ str(pream) + " no concuerda")
-            return -1
-        if(trama[4]!=len(trama)-5):
-            print(len(trama))
+            return [-1]
+        if(int(trama[4])!=len(trama)-5):
             print("Error: longitud de trama no concuerda")
             continue
-        if(trama[5]!= 0x8A):
+        if(trama[5]!= 65 and trama[5]!= 73 ):
             print("Error: No se reconoce el comando")
-            return -1
-
+            return [-1]
+        
         crc = CRC16(trama[4:len(trama)-2])
         print(trama[5:len(trama)-2])
+        
         if(crc != bytes(trama[-2:])):
+            print(crc)
             print("Error: CRC no concuerda")
-            return -1
+            return [-1]
+        msg = trama[5:len(trama)-2]
 
         #Responde la comunicación
         data = bytes([3,10])
@@ -86,9 +89,9 @@ def ReceiveCmd():
         serial_port.write(trama)
         print("Responde la trama")
         print(trama)
-        return trama[6:len(trama)-2]
+        return msg
 
-    return -2   # Error timeout
+    return [-2]   # Error timeout
 
 def sendCmd(cmd,data=None,data2=None):
     if(cmd>255):
@@ -126,19 +129,24 @@ print("Start program")
 serial_port = ConfigSerial()
 
 while (1):
-    if (i=ReceiveCmd):
-    	if 	(i[0]=='A'):
-    		call(["sudo","shutdown"])
-    	elif (i[0]=='I') 
-    		ip 	= '.'join(i[1:4])
-    		gw 	= '.'join(i[5:8])
-    		nm 	= '.'join(i[9:12])
-    		dns	= '.'join(i[13:16])
+    i=ReceiveCmd()
+    if (i):
+        print(i[0])
+        if (i[0]==65):
+            print("u")
+            print(["sudo","shutdown"])
+        elif (i[0]==73):
+            ip 	= '.'.join(i[1:4])
+            gw 	= '.'.join(i[5:8])
+            nm 	= '.'.join(i[9:12])
+            dns	= '.'.join(i[13:16])
 #         i = int(ser.readline().decode('utf-8').rstrip())
 #         #call(["sudo","service","network, "stop"])
-         	print(["sudo","route", "add", "default","gw",gw)
+            print(["sudo","route", "add", "default","gw",gw])
+            
+            print(["sudo", "ifconfig", "eth0", ip, "netmask", nm])
 #         #(["sudo", "ifconfig", "wlan0", "192.168.1.6", "netmask", "255.255.255.0"])
-         	print(["sudo", "ifconfig", "eth0", ip, "netmask", nm])
+
 # 
 #         call(["sudo","ifconfig", confg[i]["interfaz"], "up"])
     time.sleep(1)
